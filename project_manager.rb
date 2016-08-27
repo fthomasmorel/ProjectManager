@@ -5,17 +5,17 @@ require 'yaml'
 require 'pp'
 
 PROJECT_MANAGER_DIR="/Users/fthomasmorel/Projects/ProjectManager/"
-PROJECT_MANAGER="\e[32m#{"[ProjectManager]"}\e[0m"
+PROJECT_MANAGER="\e[32m[ProjectManager]\e[0m"
 
 def gather_data
   path = `pwd`.strip
   name = path.split("/").last.strip
   git = `git remote get-url --all origin 2>&1`
-  git = git.strip if !git.include? "Not a git repository"
+  git = git.strip unless git.include? "Not a git repository"
   git = nil if git.include? "Not a git repository"
-  currentProject = `cat #{PROJECT_MANAGER_DIR}.currentProject 2>&1`.strip
-  hasCurrentProject = !currentProject.include?("No such file or directory")
-  return path, name, git, currentProject, hasCurrentProject
+  current_project = `cat #{PROJECT_MANAGER_DIR}.currentProject 2>&1`.strip
+  has_current_project = !current_project.include?("No such file or directory")
+  return path, name, git, current_project, has_current_project
 end
 
 
@@ -44,10 +44,11 @@ def set_current_project(project)
   end
 end
 
-def remove_project(project)
+def remove_project(project, current_project)
   projects = fetch_projects
   if !(projects[project].nil? || projects[project].empty?)
     projects.delete(project)
+    `rm -f #{PROJECT_MANAGER_DIR}.currentProject 2>&1` if current_project == project
     File.open("#{PROJECT_MANAGER_DIR}.projects.yml", 'w') {|f| f.write projects.to_yaml }
     puts "#{PROJECT_MANAGER} Removed project #{project} successfully!"
   else
@@ -68,7 +69,7 @@ end
 
 def list_project
   projects = fetch_projects
-  if projects.empty? then
+  if projects.empty?
     puts "#{PROJECT_MANAGER} No project found!"
   else
     projects.keys.each do |project|
@@ -98,7 +99,7 @@ end
 def fetch_projects
   `touch "#{PROJECT_MANAGER_DIR}.projects.yml"`
   projects = YAML.load_file("#{PROJECT_MANAGER_DIR}.projects.yml")
-  projects = {} if !projects
+  projects = {} unless projects
   projects
 end
 
@@ -117,12 +118,12 @@ end
 
 parser.parse!
 
-path, name, git, currentProject, hasCurrentProject = gather_data
+path, name, git, current_project, has_current_project = gather_data
 
-go_to_project(currentProject) if options.empty? && hasCurrentProject
-remove_project(options[:remove]) if options[:remove]
+go_to_project(current_project) if options.empty? && has_current_project
+remove_project(options[:remove], current_project) if options[:remove]
 set_current_project(options[:set]) if options[:set]
-display_info(currentProject) if options[:current]
+display_info(current_project) if options[:current]
 display_info(options[:info]) if options[:info]
 add_project(name, path, git) if options[:add]
 go_to_project(options[:go]) if options[:go]
