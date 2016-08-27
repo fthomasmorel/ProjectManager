@@ -21,7 +21,7 @@ end
 
 
 def add_project(project, path, git=nil)
-  projects = YAML.load_file("#{PROJECT_MANAGER_DIR}.projects.yml")
+  projects = fetch_projects
   if projects[project].nil? || projects[project].empty?
     projects[project] = {
       "path" => path,
@@ -35,7 +35,7 @@ def add_project(project, path, git=nil)
 end
 
 def set_current_project(project)
-  projects = YAML.load_file("#{PROJECT_MANAGER_DIR}.projects.yml")
+  projects = fetch_projects
   if projects[project].nil? || projects[project].empty?
     puts "#{PROJECT_MANAGER} Cannot set current project: #{project} doesn't exist!"
   else
@@ -45,7 +45,7 @@ def set_current_project(project)
 end
 
 def remove_project(project)
-  projects = YAML.load_file("#{PROJECT_MANAGER_DIR}.projects.yml")
+  projects = fetch_projects
   if !(projects[project].nil? || projects[project].empty?)
     projects.delete(project)
     File.open("#{PROJECT_MANAGER_DIR}.projects.yml", 'w') {|f| f.write projects.to_yaml }
@@ -56,7 +56,7 @@ def remove_project(project)
 end
 
 def go_to_project(project)
-  projects = YAML.load_file("#{PROJECT_MANAGER_DIR}.projects.yml")
+  projects = fetch_projects
   if projects[project].nil? || projects[project].empty?
     puts "#{PROJECT_MANAGER} Cannot go to project: #{project} doesn't exist!"
   else
@@ -67,7 +67,7 @@ end
 
 
 def list_project
-  projects = YAML.load_file("#{PROJECT_MANAGER_DIR}.projects.yml")
+  projects = fetch_projects
   if projects.empty? then
     puts "#{PROJECT_MANAGER} No project found!"
   else
@@ -80,7 +80,7 @@ end
 
 
 def display_info(project)
-  projects = YAML.load_file("#{PROJECT_MANAGER_DIR}.projects.yml")
+  projects = fetch_projects
   if !(projects[project].nil? || projects[project].empty?)
     printf "\e[32m%-20s \e[0m%s\n", "Directory:", projects[project]["path"]
     printf "\e[32m%-20s \e[0m%s\n", "Git URL:", projects[project]["git"]
@@ -95,7 +95,12 @@ def display_help(parser)
   puts options
 end
 
-
+def fetch_projects
+  `touch "#{PROJECT_MANAGER_DIR}.projects.yml"`
+  projects = YAML.load_file("#{PROJECT_MANAGER_DIR}.projects.yml")
+  projects = {} if !projects
+  projects
+end
 
 options = {}
 parser = OptionParser.new do |opts|
